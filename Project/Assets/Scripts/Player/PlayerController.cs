@@ -42,6 +42,8 @@ public class PlayerController : NetworkBehaviour
         SetOwnColor();
         
     }
+
+    #region NetworkFunctions
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
@@ -54,6 +56,22 @@ public class PlayerController : NetworkBehaviour
         SetOwnColor();
     }
 
+
+    private void OnPlayerConnect(ulong obj)
+    {
+        SetOwnColor();
+    }
+
+    private void OnPlayerDisconnect(ulong clientID) //If player leaves, he instantiates a food for each part he had.
+    {
+        if (clientID == OwnerClientId)
+        {
+            SpawnFoodOnDeathServerRPC(); //If I disconnect, spawn food for my body parts.
+        }
+    }
+    #endregion
+
+    #region BegginingSetters
     private void SetBoostColor()
     {
         if (IsOwner)
@@ -78,19 +96,6 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
-    private void OnPlayerConnect(ulong obj)
-    {
-        SetOwnColor();
-    }
-
-    private void OnPlayerDisconnect(ulong clientID) //If player leaves, he instantiates a food for each part he had.
-    {
-        if (clientID == OwnerClientId)
-        {
-            SpawnFoodOnDeathServerRPC(); //If I disconnect, spawn food for my body parts.
-        }
-    }
-
     private void SetCamera() //Camera setter.
     {
         if (IsOwner)
@@ -104,6 +109,7 @@ public class PlayerController : NetworkBehaviour
             m_Camera.Priority = 0;
         }
     }
+    #endregion
 
     private void Update()
     {
@@ -119,6 +125,43 @@ public class PlayerController : NetworkBehaviour
             BoostState(false);
         }
     }
+
+    #region PlayerMovement
+    private void PlayerInputSendToServer()
+    {
+        Vector2 input = m_PlayerInputActions.Player.Movement.ReadValue<Vector2>();
+        MovePlayerServerRPC(input.x, input.y, m_UsingBoost);
+    }
+
+    [ServerRpc]
+    private void MovePlayerServerRPC(float horizontalInput, float verticalInput, bool boostState) //Movement is controlled by the server, player sends the input to the server, and the server moves the player accordingly.
+    {
+        float currentSpeed;
+
+        if (boostState) //Set speed.
+        {
+            currentSpeed = m_BoostSpeed;
+        }
+        else
+        {
+            currentSpeed = m_NormalSpeed;
+        }
+
+        if (horizontalInput != 0)
+        {
+            transform.Rotate(0, 0, -m_TurnSpeed * Time.deltaTime * horizontalInput);
+        }
+
+        //if (verticalInput!=0) //this if makes it so the player only moves if he presses W
+        //{
+        //    GetComponent<Rigidbody2D>().velocity = m_SnakeBodyParts[0].transform.up * currentSpeed * Time.deltaTime;
+        //}
+
+        GetComponent<Rigidbody2D>().velocity = transform.up * currentSpeed * Time.deltaTime;
+    }
+    #endregion
+
+    #region Boost
 
     private void BoostState(bool state)
     {
@@ -176,39 +219,9 @@ public class PlayerController : NetworkBehaviour
     {
         m_UsingBoost = false;
     }
+    #endregion
 
-    private void PlayerInputSendToServer()
-    {
-        Vector2 input = m_PlayerInputActions.Player.Movement.ReadValue<Vector2>();
-        MovePlayerServerRPC(input.x, input.y, m_UsingBoost);
-    }
-
-    [ServerRpc]
-    private void MovePlayerServerRPC(float horizontalInput, float verticalInput, bool boostState) //Movement is controlled by the server, player sends the input to the server, and the server moves the player accordingly.
-    {
-        float currentSpeed;
-
-        if (boostState) //Set speed.
-        {
-            currentSpeed = m_BoostSpeed;
-        }
-        else
-        {
-            currentSpeed = m_NormalSpeed;
-        }
-
-        if (horizontalInput != 0)
-        {
-            transform.Rotate(0, 0, -m_TurnSpeed * Time.deltaTime * horizontalInput);
-        }
-
-        //if (verticalInput!=0) //this if makes it so the player only moves if he presses W
-        //{
-        //    GetComponent<Rigidbody2D>().velocity = m_SnakeBodyParts[0].transform.up * currentSpeed * Time.deltaTime;
-        //}
-
-        GetComponent<Rigidbody2D>().velocity = transform.up * currentSpeed * Time.deltaTime;
-    }
+    #region DetermineWinnerFunctions
 
     [ServerRpc]
     private void WinnerInformationServerRPC(ulong winner, ulong loser) //Function needs the name "ServerRPC" at the end of it in order for it to work from the server.
@@ -255,6 +268,9 @@ public class PlayerController : NetworkBehaviour
         m_CurrentGrowth.GameOver();
     }
 
+    #endregion
+
+    #region Collisions
 
     struct PlayerData : INetworkSerializable //Data that is serialized in order to get read by the server
     {
@@ -268,12 +284,6 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
-    private IEnumerator CollisionCheckCoroutine() //Used because more than one collisionenter can be triggered before server notices, so a delay is added between checks.
-    {
-        m_CanCollide = false;
-        yield return m_WaitForSeconds;
-        m_CanCollide = true;
-    }
 
     [ServerRpc]
     private void DetermineWinnerServerRPC(PlayerData player1, PlayerData player2) //Function needs the name "ServerRPC" at the end of it in order for it to work from the server.
@@ -286,6 +296,14 @@ public class PlayerController : NetworkBehaviour
         {
             WinnerInformationServerRPC(player2.player_id, player1.player_id); //Player one is the winner, player two is the loser
         }
+    }
+
+
+    private IEnumerator CollisionCheckCoroutine() //Used because more than one collisionenter can be triggered before server notices, so a delay is added between checks.
+    {
+        m_CanCollide = false;
+        yield return m_WaitForSeconds;
+        m_CanCollide = true;
     }
 
 
@@ -317,4 +335,5 @@ public class PlayerController : NetworkBehaviour
             WinnerInformationServerRPC(bodyPart.GetOwner().GetComponent<PlayerController>().OwnerClientId, OwnerClientId);
         }
     }
+    #endregion
 }

@@ -25,8 +25,8 @@ public class ColorPickerController : MonoBehaviour
     {
         m_Rect = GetComponent<RectTransform>();
         m_ColorTexture = GetComponent<Image>().mainTexture as Texture2D;
-        m_ColorChosen = Color.black;
-        m_OnColorSelect?.Invoke(Color.black);
+        m_ColorChosen = Color.blue;
+        m_OnColorSelect?.Invoke(Color.blue);
     }
 
 

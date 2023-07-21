@@ -87,20 +87,4 @@ public class AudioManager : MonoBehaviour
         return null;
 
     }
-
-    public void VolumeDown()
-    {
-        StartCoroutine(MusicVolumeDown());
-    }
-
-    private IEnumerator MusicVolumeDown()
-    {
-        //float volumeSpeed = 0.005f;
-        //for (float i = m_BackgroundSound.volume; i >= m_BackgroundSound.volume / 2.0f; i -= volumeSpeed)
-        //{
-        //    m_BackgroundSound.volume = i;
-        //    yield return null;
-        //}
-        yield return null;
-    }
 }
