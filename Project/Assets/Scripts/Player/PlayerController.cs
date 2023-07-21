@@ -53,7 +53,6 @@ public class PlayerController : NetworkBehaviour
         {
             NetworkManager.Singleton.OnClientDisconnectCallback += OnPlayerDisconnect;
         }
-        SetOwnColor();
     }
 
 
