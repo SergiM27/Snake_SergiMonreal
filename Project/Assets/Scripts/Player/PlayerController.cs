@@ -3,7 +3,6 @@ using System;
 using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using Cinemachine;
 
 public class PlayerController : NetworkBehaviour
@@ -40,19 +39,18 @@ public class PlayerController : NetworkBehaviour
         m_PlayerInputActions.Player.Enable();
         SetBoostColor();
         SetOwnColor();
-        
     }
 
     #region NetworkFunctions
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
-        NetworkManager.Singleton.OnClientConnectedCallback += OnPlayerConnect;
-        SetCamera();
         if (IsServer)
         {
             NetworkManager.Singleton.OnClientDisconnectCallback += OnPlayerDisconnect;
         }
+        NetworkManager.Singleton.OnClientConnectedCallback += OnPlayerConnect;
+        SetCamera();
     }
 
 
